@@ -1,0 +1,51 @@
+#!/bin/bash
+# 
+# Kevin M. Mallgrave
+# Btrfs snapshot/tar script - to be called by systemd timer or cron job
+#
+# Files stored on slash or home should be very resistant 
+# to accidental deletions or hardware failure with this schema.
+#
+# Block diagram:
+#
+# [ / - linux root(slash)    ] [ /home - user home subvolume ]  \
+#     |                            | 				  > 512GB M2 SSD
+# [ btrfs subvolume snapshot ] [ btrfs subvolume snapshot    ]  /
+#     |                            | 			        \ 
+# [ 'btrfs send' to /storage ] [ 'btrfs send' to /storage    ]    > 2TB btrfs RAID1(2x2TB)
+#     |                            |				/
+# [ tar/rsync to backup      ] [ tar/rsync to backup         ]    > 3 TB volume
+#     |                            |                            \ 
+# [ /storage_backup cold storage for all snapshots and tars  ]    > final state of backup schema
+#
+# Variable declarations: upSeconds = uptime in seconds, upMins= uptime in minutes
+#
+
+upSeconds="$(cat /proc/uptime | grep -o '^[0-9]\+')"
+upMins=$((${upSeconds} / 60))
+
+#tar/rsync SSD and storage partition backups
+# if uptime less than 5 we don't want to do anything
+#if [ "${upMins}" -gt "5" ]
+#then
+#    updatedb
+#    emerge --sync
+#   rsync -av --delete /storage /storage_backup/storage/ &>/dev/null
+#    mv /storage_backup/home.tar /storage_backup/home_old.tar
+#    mv /storage_backup/slash.tar /storage_backup/slash_old.tar
+#    tar --exclude='slash/var/cache/distfiles' --exclude='slash/usr/src'  -cvf /storage_backup/slash.tar /storage_backup/slash/ &>/dev/null
+#    tar -cvf /storage_backup/home.tar /storage_backup/home/ &>/dev/null
+#fi
+
+#delete the old cold storage snapshots
+btrfs subvolume delete /storage_backup/home
+btrfs subvolume delete /storage_backup/slash
+##send old snapshots to cold storage
+btrfs send /snapshots/home/ | btrfs receive /storage_backup/
+btrfs send /snapshots/slash/ | btrfs receive /storage_backup/
+## delete old snapshots
+btrfs subvolume delete /snapshots/home
+btrfs subvolume delete /snapshots/slash
+## make new snapshots
+btrfs subvolume snapshot -r / /snapshots/slash
+btrfs subvolume snapshot -r /home /snapshots/home

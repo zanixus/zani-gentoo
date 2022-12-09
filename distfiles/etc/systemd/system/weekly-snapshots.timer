@@ -1,0 +1,13 @@
+[Unit]
+Description=Snapshot btrfs volumes weekly
+#RefuseManualStart=No
+#RefuseManualStop=No
+
+[Timer]
+OnCalendar=weekly
+# persistent is true = will run on reboot
+Persistent=false
+Unit=weekly-snapshots.service
+
+[Install]
+WantedBy=timers.target
