@@ -15,25 +15,14 @@ DEPEND=""
 RDEPEND="${DEPEND}"
 BDEPEND=""
 
+S="${WORKDIR}"
+
 src_unpack() {
 	if [[ -n ${A} ]]; then
 		unpack ${A}
 	fi
 }
 
-src_prepare() {
-	if [[ $(declare -p PATCHES 2>/dev/null) == "declare -a"* ]]; then
-		[[ -n ${PATCHES[@]} ]] && eapply "${PATCHES[@]}"
-	else
-		[[ -n ${PATCHES} ]] && eapply ${PATCHES}
-	fi
-	eapply_user
-}
-
-src_compile() {
-	true;
-}
-
-pkg_postinst() {
-	true;
+src_install() {
+	cp -R "${S}/usr/local/bin/zani-btrfs-snapshot ${D}/usr/local/bin"
 }
