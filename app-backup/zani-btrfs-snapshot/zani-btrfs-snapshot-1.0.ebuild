@@ -24,5 +24,5 @@ src_unpack() {
 }
 
 src_install() {
-	cp -R "${S}/usr/local/bin/zani-btrfs-snapshot ${D}/usr/local/bin"
+	cp -R "${S}/usr/local/bin/zani-btrfs-snapshot ${D}/opt/zani/bin"
 }
